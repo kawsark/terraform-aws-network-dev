@@ -1,6 +1,6 @@
 variable "owner" {
   description = "An Owner tag"
-  default = "kawsar@hashicorp.com"
+  default = "demouser"
 }
 
 variable "security_group_ingress" {
