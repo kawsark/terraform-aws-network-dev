@@ -24,3 +24,24 @@ module "aws_network_dev" {
   owner = "${var.owner}"
   security_group_ingress = "${var.security_group_ingress}"
 }
+
+# Exposing outputs from aws_network_dev module
+output "security_group_id" {
+  value = "${module.aws_network_dev.security_group_id}"
+}
+
+output "public_subnet1_id" {
+  value = "${module.aws_network_dev.public_subnet1_id}"
+}
+
+output "public_subnet2_id" {
+  value = "${module.aws_network_dev.public_subnet2_id}"
+}
+
+output "private_subnet1_id" {
+  value = "${module.aws_network_dev.private_subnet1_id}"
+}
+
+output "private_subnet2_id" {
+  value = "${module.aws_network_dev.private_subnet2_id}"
+}
