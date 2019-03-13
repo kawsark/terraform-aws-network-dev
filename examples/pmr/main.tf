@@ -18,8 +18,8 @@ provider "aws" {
 }
 
 module "aws_network_dev" {
-#  source = "app.terraform.io/kawsar-org-dev/network-dev/aws"
-  source = "../../"
+  source = "app.terraform.io/kawsar-org/network-dev/aws"
+#  source = "../../"
   aws_region = "${var.aws_region}"
   owner = "${var.owner}"
   security_group_ingress = "${var.security_group_ingress}"
