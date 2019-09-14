@@ -9,7 +9,7 @@ variable "aws_region" {
 
 variable "security_group_ingress" {
   description = "Ingress CIDR to allow SSH access. Warning: setting 0.0.0.0/0 is a bad idea."
-  type = "list"
+  type        = list(string)
 }
 
 variable "environment" {
@@ -40,3 +40,4 @@ variable "private_subnet_1_block" {
 variable "private_subnet_2_block" {
   default = "192.168.24.0/21"
 }
+
