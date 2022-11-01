@@ -1,6 +1,9 @@
 # Emacs:
 *~
 
+.terraform.lock.hcl
+remote.tf
+
 #  Local .terraform directories
 **/.terraform/*
 

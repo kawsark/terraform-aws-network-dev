@@ -1,185 +1,45 @@
-# Terraform configuration for Minimum Viable Deployment (MVD)
-
 provider "aws" {
-  # AWS provider configured via environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  region = local.region
+}
+
+locals {
+  name   = "ex-${replace(basename(path.cwd), "_", "-")}"
   region = var.aws_region
-}
-
-# Internet VPC
-resource "aws_vpc" "mvd_vpc" {
-  cidr_block           = var.vpc_cidr_block
-  instance_tenancy     = "default"
-  enable_dns_support   = "true"
-  enable_dns_hostnames = "true"
 
   tags = {
-    Name = "mvd_vpc"
-    Env  = var.environment
+    Example    = local.name
+    GithubRepo = "terraform-aws-vpc"
+    GithubOrg  = "terraform-aws-modules"
   }
 }
 
-# Subnets
-resource "aws_subnet" "mvd-public-1" {
-  vpc_id                  = aws_vpc.mvd_vpc.id
-  cidr_block              = var.public_subnet_1_block
-  map_public_ip_on_launch = "true"
-  availability_zone       = format("%sa", var.aws_region)
+################################################################################
+# VPC Module
+################################################################################
 
-  tags = {
-    Name = "mvd-public-1"
-    Env  = var.environment
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = local.name
+  cidr = "10.0.0.0/16"
+
+  azs             = ["${local.region}a", "${local.region}b", "${local.region}c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  #enable_ipv6 = true
+
+  enable_nat_gateway = false
+  single_nat_gateway = true
+
+  public_subnet_tags = {
+    Name = "overridden-name-public"
   }
-}
 
-resource "aws_subnet" "mvd-public-2" {
-  vpc_id                  = aws_vpc.mvd_vpc.id
-  cidr_block              = var.public_subnet_2_block
-  map_public_ip_on_launch = "true"
-  availability_zone       = format("%sb", var.aws_region)
+  tags = local.tags
 
-  tags = {
-    Name = "mvd-public-2"
-    Env  = var.environment
+  vpc_tags = {
+    Name = "kawsark"
   }
+
 }
-
-resource "aws_subnet" "mvd-private-1" {
-  vpc_id                  = aws_vpc.mvd_vpc.id
-  cidr_block              = var.private_subnet_1_block
-  map_public_ip_on_launch = "false"
-  availability_zone       = format("%sa", var.aws_region)
-
-  tags = {
-    Name = "mvd-private-1"
-    Env  = var.environment
-  }
-}
-
-resource "aws_subnet" "mvd-private-2" {
-  vpc_id                  = aws_vpc.mvd_vpc.id
-  cidr_block              = var.private_subnet_2_block
-  map_public_ip_on_launch = "false"
-  availability_zone       = format("%sb", var.aws_region)
-
-  tags = {
-    Name = "mvd-private-2"
-    Env  = var.environment
-  }
-}
-
-# Internet GW
-resource "aws_internet_gateway" "mvd-gw" {
-  vpc_id = aws_vpc.mvd_vpc.id
-
-  tags = {
-    Name = "mvd-gw"
-    Env  = var.environment
-  }
-}
-
-#Public route table with IGW
-resource "aws_route_table" "mvd-public" {
-  vpc_id = aws_vpc.mvd_vpc.id
-
-  tags = {
-    Name = "mvd-public-1"
-    Env  = var.environment
-  }
-}
-
-#Public route
-resource "aws_route" "mvd-public-route" {
-  route_table_id         = aws_route_table.mvd-public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.mvd-gw.id
-}
-
-# route associations public
-resource "aws_route_table_association" "mvd-public-1-a" {
-  subnet_id      = aws_subnet.mvd-public-1.id
-  route_table_id = aws_route_table.mvd-public.id
-}
-
-resource "aws_route_table_association" "mvd-public-2-a" {
-  subnet_id      = aws_subnet.mvd-public-2.id
-  route_table_id = aws_route_table.mvd-public.id
-}
-
-resource "aws_security_group" "mvd-sg" {
-  vpc_id      = aws_vpc.mvd_vpc.id
-  description = "security group that allows ssh and all egress traffic"
-
-  tags = {
-    Name = "mvd-sg"
-    Env  = var.environment
-  }
-}
-
-resource "aws_security_group_rule" "egress_allow_all" {
-  type        = "egress"
-  from_port   = 0
-  to_port     = 0
-  protocol    = "-1"
-  cidr_blocks = ["0.0.0.0/0"]
-
-  security_group_id = aws_security_group.mvd-sg.id
-}
-
-resource "aws_security_group_rule" "ingress_allow_self" {
-  type      = "ingress"
-  from_port = 0
-  to_port   = 0
-  protocol  = -1
-  self      = true
-
-  security_group_id = aws_security_group.mvd-sg.id
-}
-
-resource "aws_security_group_rule" "ingress_allow_ssh" {
-  type        = "ingress"
-  from_port   = 0
-  to_port     = 0
-  protocol    = "-1"
-  cidr_blocks = var.security_group_ingress
-  security_group_id = aws_security_group.mvd-sg.id
-}
-
-# nat gw
-resource "aws_eip" "nat_eip" {
-  vpc = true
-}
-
-resource "aws_nat_gateway" "nat-gw" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.mvd-public-1.id
-  depends_on    = [aws_internet_gateway.mvd-gw]
-}
-
-#Private route table with NAT
-resource "aws_route_table" "mvd-private" {
-  vpc_id = aws_vpc.mvd_vpc.id
-
-  tags = {
-    Name = "mvd-private-1"
-    Env  = var.environment
-  }
-}
-
-#Private route
-resource "aws_route" "mvd-private-route" {
-  route_table_id         = aws_route_table.mvd-private.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat-gw.id
-}
-
-# route associations private
-resource "aws_route_table_association" "mvd-private-1-a" {
-  subnet_id      = aws_subnet.mvd-private-1.id
-  route_table_id = aws_route_table.mvd-private.id
-}
-
-resource "aws_route_table_association" "mvd-private-1-b" {
-  subnet_id      = aws_subnet.mvd-private-2.id
-  route_table_id = aws_route_table.mvd-private.id
-}
-
