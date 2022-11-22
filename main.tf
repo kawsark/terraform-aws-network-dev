@@ -10,6 +10,7 @@ locals {
     Example    = local.name
     GithubRepo = "terraform-aws-vpc"
     GithubOrg  = "terraform-aws-modules"
+    "kubernetes.io/cluster/${var.eks_cluster_name}" = "owned"
   }
 }
 
@@ -37,6 +38,11 @@ module "vpc" {
 
   public_subnet_tags = {
     Name = "overridden-name-public"
+    "kubernetes.io/role/elb" = "1"
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = "1"
   }
 
   tags = local.tags

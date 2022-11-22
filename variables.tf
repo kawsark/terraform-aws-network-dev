@@ -2,6 +2,11 @@ variable "environment" {
   default = "dev"
 }
 
+variable "eks_cluster_name" {
+  description = "Optional EKS cluster name to tag subnets appropriately"
+  default = "tf-network-eks"
+}
+
 variable "owner" {
   description = "An Owner tag"
   default     = "tfdemouser"

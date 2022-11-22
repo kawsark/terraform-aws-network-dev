@@ -20,3 +20,12 @@ output "igw_id" {
 output "security_group_id" {
   value = aws_security_group.mvd-sg.id
 }
+
+output "private_route_tables" {
+  value = module.vpc.private_route_table_ids
+}
+
+
+output "public_route_tables" {
+  value = module.vpc.public_route_table_ids
+}
